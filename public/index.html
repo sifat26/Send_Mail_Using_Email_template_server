@@ -40,23 +40,47 @@
       <p id="status" class="fw-bold text-success"></p>
     </div>
   </div>
+<!-- Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalMessage">
+        Message goes here
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <!-- CodeMirror Scripts -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+<!-- Bootstrap + CodeMirror Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-    const editor = CodeMirror.fromTextArea(document.getElementById("htmlCode"), {
-      lineNumbers: true,
-      mode: "htmlmixed",
-      theme: "default"
-    });
+<script>
+  const editor = CodeMirror.fromTextArea(document.getElementById("htmlCode"), {
+    lineNumbers: true,
+    mode: "htmlmixed",
+    theme: "default"
+  });
 
-    async function sendEmail() {
-      const to = document.getElementById("to").value;
-      const subject = document.getElementById("subject").value;
-      const html = editor.getValue();
+  async function sendEmail() {
+    const to = document.getElementById("to").value.trim();
+    const subject = document.getElementById("subject").value.trim();
+    const html = editor.getValue().trim();
 
+    if (!to || !subject || !html) {
+      showModal("❌ Please fill in all fields.");
+      return;
+    }
+
+    try {
       const res = await fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,8 +88,30 @@
       });
 
       const result = await res.json();
-      document.getElementById("status").textContent = result.message || "Something went wrong.";
+
+      if (res.ok) {
+        showModal("✅ Email sent successfully!");
+        resetForm();
+      } else {
+        showModal(`❌ Failed to send email: ${result.message || "Unknown error"}`);
+      }
+    } catch (error) {
+      showModal(`❌ Error: ${error.message}`);
     }
-  </script>
+  }
+
+  function showModal(message) {
+    document.getElementById("modalMessage").textContent = message;
+    const modal = new bootstrap.Modal(document.getElementById("messageModal"));
+    modal.show();
+  }
+
+  function resetForm() {
+    document.getElementById("to").value = "";
+    document.getElementById("subject").value = "";
+    editor.setValue("");
+  }
+</script>
+
 </body>
 </html>
